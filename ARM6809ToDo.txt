@@ -1,0 +1,5 @@
+ARM6809 To Do
+--------------
+
+	Test SYNC and CWAI
+

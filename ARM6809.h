@@ -1,3 +1,11 @@
+//
+//  ARM6809.h
+//  ARM6809
+//
+//  Created by Fredrik Ahlström on 2008-07-14.
+//  Copyright © 2008-2021 Fredrik Ahlström. All rights reserved.
+//
+
 #ifndef ARM6809_HEADER
 #define ARM6809_HEADER
 

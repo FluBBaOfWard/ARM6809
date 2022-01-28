@@ -1,3 +1,10 @@
+//
+//  ARM6809_mac.h
+//  ARM6809
+//
+//  Created by Fredrik Ahlström on 2008-07-14.
+//  Copyright © 2008-2021 Fredrik Ahlström. All rights reserved.
+//
 
 #include "ARM6809.i"
 							;@ ARM flags

@@ -1,3 +1,10 @@
+//
+//  ARM6809.i
+//  ARM6809
+//
+//  Created by Fredrik Ahlström on 2008-07-14.
+//  Copyright © 2008-2021 Fredrik Ahlström. All rights reserved.
+//
 
 				;@ r0,r1,r2=temp regs
 	m6809f		.req r3			;@ Bits 0-7=f, 8-23=0, 24-31=DP.

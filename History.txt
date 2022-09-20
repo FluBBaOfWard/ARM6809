@@ -2,6 +2,9 @@ ARM6809 revision history
 -=-=-=-=-=-=-=-=-=-=-=-=-
 
 
+V1.1.6 - 2022-09-20 (FluBBa)
+	Added define for not using fast memory.
+
 V1.1.5 - 2021-03-05 (FluBBa)
 	Added load/save state.
 	Fixed cycle counting for some stack operations.

@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2021 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2022 Fredrik Ahlström. All rights reserved.
 //
 
 #ifdef __arm__
@@ -13,10 +13,14 @@
 	.syntax unified
 	.arm
 
-#ifdef NDS
+#if defined(NDS) && !defined(NO_FASTMEM_6809)
 	.section .itcm						;@ For the NDS ARM9
-#elif GBA
+#elif defined(GBA)
+	#if !defined(NO_FASTMEM_6809)
 	.section .iwram, "ax", %progbits	;@ For the GBA
+	#else
+	.section .ewram, "ax"				;@ For the GBA
+	#endif
 #else
 	.section .text						;@ For anything else
 #endif

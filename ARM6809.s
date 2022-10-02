@@ -3106,6 +3106,10 @@ FEAFB:		;@ EA = [SP+D]
 
 
 ;@----------------------------------------------------------------------------
+returnToCaller:
+	ldmfd sp!,{lr}
+	bx lr
+;@----------------------------------------------------------------------------
 m6809SetNMIPin:
 ;@----------------------------------------------------------------------------
 	cmp r0,#0
@@ -3144,6 +3148,8 @@ m6809RestoreAndRunXCycles:	;@ r0 = number of cycles to run
 ;@----------------------------------------------------------------------------
 m6809RunXCycles:			;@ r0 = number of cycles to run
 ;@----------------------------------------------------------------------------
+	stmfd sp!,{lr}
+addR0Cycles:
 	add cycles,cycles,r0,lsl#CYC_SHIFT
 ;@----------------------------------------------------------------------------
 m6809CheckIrqs:
@@ -3221,7 +3227,7 @@ EIFix:	;@ ei should be delayed by 1 instruction.
 	ldr r1,[m6809optbl,#m6809NextTimeout_]
 	str r1,[m6809optbl,#m6809NextTimeout]
 	mov r0,r0,lsr#CYC_SHIFT			;@ Don't add any cpu bits.
-	b m6809RunXCycles
+	b addR0Cycles
 ;@----------------------------------------------------------------------------
 
 
@@ -3433,9 +3439,15 @@ _11NP:		;@ Page2 Extensions
 	.section .text
 	.align 2
 ;@----------------------------------------------------------------------------
-m6809Reset:		;@ Called by cpuReset, (r0-r9 are free to use)
+m6809Reset:					;@ r0 = m6809optbl.
+;@ Called by cpuReset
 ;@----------------------------------------------------------------------------
-	str lr,[sp,#-4]!
+	stmfd sp!,{r4-r11,lr}
+	mov m6809optbl,r0
+
+	ldr r0,=returnToCaller
+	str r0,[m6809optbl,#m6809NextTimeout]
+	str r0,[m6809optbl,#m6809NextTimeout_]
 
 	mov m6809a,#0x00000000
 	mov m6809b,#0x00000000
@@ -3456,7 +3468,8 @@ m6809Reset:		;@ Called by cpuReset, (r0-r9 are free to use)
 
 	add r0,m6809optbl,#m6809Regs
 	stmia r0!,{m6809f-m6809pc,m6809sp}
-	ldr lr,[sp],#4
+
+	ldmfd sp!,{r4-r11,lr}
 	bx lr
 ;@----------------------------------------------------------------------------
 m6809SaveState:			;@ In r0=destination, r1=m6809optbl. Out r0=state size.

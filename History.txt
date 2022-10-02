@@ -2,8 +2,10 @@ ARM6809 revision history
 -=-=-=-=-=-=-=-=-=-=-=-=-
 
 
-V1.1.6 - 2022-09-20 (FluBBa)
+V1.1.6 - 2022-10-02 (FluBBa)
 	Added define for not using fast memory.
+	Fixed calling of the cpu.
+	Refactored reset function to take a pointer to cpu core.
 
 V1.1.5 - 2021-03-05 (FluBBa)
 	Added load/save state.

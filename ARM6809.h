@@ -41,7 +41,7 @@ typedef struct {
 
 extern ARM6809Core m6809OpTable;
 
-void m6809Reset(int type);
+void m6809Reset(ARM6809Core *cpu);
 
 /**
  * Saves the state of the cpu to the destination.

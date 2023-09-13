@@ -81,7 +81,7 @@
 #else
 	bpl decodeOpCode
 #endif
-	b returnToCaller
+	b m6809OutOfCycles
 	.endm
 
 

@@ -37,6 +37,7 @@
 	.global m6809SaveState
 	.global m6809LoadState
 	.global m6809GetStateSize
+	.global m6809OutOfCycles
 
 	.global m6809OpTable
 
@@ -162,7 +163,7 @@ _13:	;@ SYNC				Wait until an IRQ pin is set.
 	mvns r0,cycles,asr#CYC_SHIFT+1			;@
 	addmi cycles,cycles,r0,lsl#CYC_SHIFT+1	;@ Consume all remaining cycles in steps of 2.
 	orr cycles,cycles,#CYC_SYNC
-	b returnToCaller
+	b m6809OutOfCycles
 ;@----------------------------------------------------------------------------
 _1020:	;@ LBRA				Long Branch Allways
 ;@----------------------------------------------------------------------------
@@ -653,7 +654,7 @@ _3C:	;@ CWAI				Wait for interrupt
 	mvns r0,cycles,asr#CYC_SHIFT+2			;@
 	addmi cycles,cycles,r0,lsl#CYC_SHIFT+2	;@ Consume all remaining cycles in steps of 4.
 	orr cycles,cycles,#CYC_CWAI
-	b returnToCaller
+	b m6809OutOfCycles
 ;@----------------------------------------------------------------------------
 _3D:	;@ MUL				Unsigned A * B
 ;@----------------------------------------------------------------------------
@@ -3094,6 +3095,7 @@ FEAFB:		;@ EA = [SP+D]
 
 
 ;@----------------------------------------------------------------------------
+m6809OutOfCycles:
 returnToCaller:
 	ldmfd sp!,{lr}
 	bx lr

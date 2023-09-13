@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2022 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2023 Fredrik Ahlström. All rights reserved.
 //
 
 				;@ r0,r1,r2=temp regs
@@ -40,9 +40,6 @@ m6809NmiPin:		.byte 0
 m6809Padding:		.space 2
 
 m6809LastBank:		.long 0
-m6809OldCycles:		.long 0
-m6809NextTimeout_:	.long 0
-m6809NextTimeout:	.long 0
 m6809Size:
 
 ;@----------------------------------------------------------------------------

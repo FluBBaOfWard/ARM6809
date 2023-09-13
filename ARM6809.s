@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2022 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2023 Fredrik Ahlström. All rights reserved.
 //
 
 #ifdef __arm__
@@ -39,7 +39,6 @@
 	.global m6809GetStateSize
 
 	.global m6809OpTable
-
 
 
 #ifdef KONAMI6809
@@ -163,7 +162,7 @@ _13:	;@ SYNC				Wait until an IRQ pin is set.
 	mvns r0,cycles,asr#CYC_SHIFT+1			;@
 	addmi cycles,cycles,r0,lsl#CYC_SHIFT+1	;@ Consume all remaining cycles in steps of 2.
 	orr cycles,cycles,#CYC_SYNC
-	ldr pc,[m6809optbl,#m6809NextTimeout]
+	b returnToCaller
 ;@----------------------------------------------------------------------------
 _1020:	;@ LBRA				Long Branch Allways
 ;@----------------------------------------------------------------------------
@@ -639,17 +638,6 @@ _3B:	;@ RTI
 	bl pullRegisters
 	eatCycles 6
 	b m6809CheckIrqs
-;@	fetch 6
-
-;@	mov r1,m6809f
-;@	orr m6809f,m6809f,#IF
-;@	tst r1,#IF
-;@rtiFix
-;@	ldreq r0,=EIFix
-;@	streq r0,m6809NextTimeout
-;@	streq cycles,m6809OldCycles
-;@	andeq cycles,cycles,#CYC_MASK
-;@	fetchForce
 ;@----------------------------------------------------------------------------
 _3C:	;@ CWAI				Wait for interrupt
 ;@----------------------------------------------------------------------------
@@ -665,7 +653,7 @@ _3C:	;@ CWAI				Wait for interrupt
 	mvns r0,cycles,asr#CYC_SHIFT+2			;@
 	addmi cycles,cycles,r0,lsl#CYC_SHIFT+2	;@ Consume all remaining cycles in steps of 4.
 	orr cycles,cycles,#CYC_CWAI
-	ldr pc,[m6809optbl,#m6809NextTimeout]
+	b returnToCaller
 ;@----------------------------------------------------------------------------
 _3D:	;@ MUL				Unsigned A * B
 ;@----------------------------------------------------------------------------
@@ -3221,15 +3209,11 @@ firqEntry:
 	encodePC
 	fetch 7
 ;@----------------------------------------------------------------------------
-EIFix:	;@ ei should be delayed by 1 instruction.
+m6809DelayIrqCheck:			;@ This can be used on EI/RTI/POPF
 ;@----------------------------------------------------------------------------
-	ldr r0,[m6809optbl,#m6809OldCycles]
-	ldr r1,[m6809optbl,#m6809NextTimeout_]
-	str r1,[m6809optbl,#m6809NextTimeout]
-	mov r0,r0,lsr#CYC_SHIFT			;@ Don't add any cpu bits.
-	b addR0Cycles
+	orr cycles,cycles,#0xC0000000
+	fetchForce
 ;@----------------------------------------------------------------------------
-
 
 
 
@@ -3445,10 +3429,6 @@ m6809Reset:					;@ r0 = m6809optbl.
 	stmfd sp!,{r4-r11,lr}
 	mov m6809optbl,r0
 
-	ldr r0,=returnToCaller
-	str r0,[m6809optbl,#m6809NextTimeout]
-	str r0,[m6809optbl,#m6809NextTimeout_]
-
 	mov m6809a,#0x00000000
 	mov m6809b,#0x00000000
 	mov m6809x,#0x00000000
@@ -3556,9 +3536,6 @@ m6809StateStart:
 	.space 2 ;@ m6809Padding:
 m6809StateEnd:
 	.long 0 ;@ m6809LastBank:		Last memmap added to PC (used to calculate current PC)
-	.long 0 ;@ m6809OldCycles:		Backup of cycles
-	.long 0 ;@ m6809NextTimeout_:	Backup of nexttimeout
-	.long 0 ;@ m6809NextTimeout:	Jump here when cycles runs out
 ;@----------------------------------------------------------------------------
 
 #endif // #ifdef __arm__

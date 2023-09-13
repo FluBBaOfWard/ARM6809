@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2022 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2023 Fredrik Ahlström. All rights reserved.
 //
 
 #include "ARM6809.i"
@@ -81,7 +81,7 @@
 #else
 	bpl decodeOpCode
 #endif
-	ldr pc,[m6809optbl,#m6809NextTimeout]
+	b returnToCaller
 	.endm
 
 

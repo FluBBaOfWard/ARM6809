@@ -1,6 +1,8 @@
 ARM6809 revision history
 -=-=-=-=-=-=-=-=-=-=-=-=-
 
+V1.1.7 - 2023-09-13 (FluBBa)
+	Removed OldCycles & NextTimeout variables.
 
 V1.1.6 - 2022-10-02 (FluBBa)
 	Added define for not using fast memory.

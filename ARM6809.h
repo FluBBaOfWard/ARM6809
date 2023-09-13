@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2022 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2023 Fredrik Ahlström. All rights reserved.
 //
 
 #ifndef ARM6809_HEADER
@@ -33,9 +33,6 @@ typedef struct {
 	u8 m6809Padding[2];
 
 	void *m6809LastBank;
-	int m6809OldCycles;
-	void *m6809NextTimeout_;
-	void *m6809NextTimeout;
 } ARM6809Core;
 
 

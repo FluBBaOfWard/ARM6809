@@ -45,16 +45,16 @@
 
 
 	.macro loadLastBank reg
-	ldr \reg,[m6809optbl,#m6809LastBank]
+	ldr \reg,[m6809ptr,#m6809LastBank]
 	.endm
 
 	.macro storeLastBank reg
-	str \reg,[m6809optbl,#m6809LastBank]
+	str \reg,[m6809ptr,#m6809LastBank]
 	.endm
 
 	.macro encodePC				;@ Translate m6809pc from M6809 PC to rom offset
 	and r1,m6809pc,#0xE000
-	add r2,m6809optbl,#m6809MemTbl
+	add r2,m6809ptr,#m6809MemTbl
 	ldr r1,[r2,r1,lsr#11]
 	storeLastBank r1
 	add m6809pc,m6809pc,r1
@@ -77,7 +77,7 @@
 	subs cycles,cycles,#(\count)*CYCLE
 #ifndef KONAMI6809
 	ldrbpl r0,[m6809pc],#1
-	ldrpl pc,[m6809optbl,r0,lsl#2]
+	ldrpl pc,[m6809ptr,r0,lsl#2]
 #else
 	bpl decodeOpCode
 #endif
@@ -88,7 +88,7 @@
 	.macro fetchForce
 #ifndef KONAMI6809
 	ldrb r0,[m6809pc],#1
-	ldr pc,[m6809optbl,r0,lsl#2]
+	ldr pc,[m6809ptr,r0,lsl#2]
 #else
 	b decodeOpCode
 #endif
@@ -121,7 +121,7 @@
 
 	.macro readMem8
 	and r1,addy,#0xE000
-	add r2,m6809optbl,#m6809ReadTbl
+	add r2,m6809ptr,#m6809ReadTbl
 	adr lr,0f
 	ldr pc,[r2,r1,lsr#11]	;@ In: addy,r1=addy&0xE000 (for rom_R)
 0:							;@ Out: r0=val (bits 8-31=0 ), addy preserved for 16bit read/write
@@ -129,7 +129,7 @@
 
 	.macro readMem8NoLr
 	and r1,addy,#0xE000
-	add r2,m6809optbl,#m6809ReadTbl
+	add r2,m6809ptr,#m6809ReadTbl
 	ldr pc,[r2,r1,lsr#11]	;@ In: addy,r1=addy&0xE000 (for rom_R)
 							;@ Out: r0=val (bits 8-31=0 ), addy preserved for 16bit read/write
 	.endm
@@ -199,7 +199,7 @@
 
 	.macro writeMem8
 	and r1,addy,#0xE000
-	add r2,m6809optbl,#m6809WriteTbl
+	add r2,m6809ptr,#m6809WriteTbl
 	adr lr,0f
 	ldr pc,[r2,r1,lsr#11]	;@ In: addy,r0=val(bits 8-31=?)
 0:							;@ Out: r0,r1,r2,addy=?
@@ -207,7 +207,7 @@
 
 	.macro writeMem8NoLr
 	and r1,addy,#0xE000
-	add r2,m6809optbl,#m6809WriteTbl
+	add r2,m6809ptr,#m6809WriteTbl
 	ldr pc,[r2,r1,lsr#11]	;@ In: addy,r0=val(bits 8-31=?)
 							;@ Out: r0,r1,r2,addy=?
 	.endm
@@ -414,7 +414,7 @@
 	.endm
 
 	.macro opCMPU
-	ldr r1,[m6809optbl,#m6809US]
+	ldr r1,[m6809ptr,#m6809US]
 	opCMP16 r1
 	.endm
 ;@---------------------------------------
@@ -477,7 +477,7 @@
 
 	.macro opJMPEA
 	and r1,addy,#0xE0000000
-	add r2,m6809optbl,#m6809MemTbl
+	add r2,m6809ptr,#m6809MemTbl
 	ldr r1,[r2,r1,lsr#27]
 	storeLastBank r1
 	add m6809pc,r1,addy,lsr#16
@@ -500,7 +500,7 @@
 
 	.macro opLDU
 	opLD16 r0
-	str r0,[m6809optbl,#m6809US]
+	str r0,[m6809ptr,#m6809US]
 	.endm
 ;@---------------------------------------
 
@@ -630,7 +630,7 @@
 	.endm
 
 	.macro opSTU
-	ldr r1,[m6809optbl,#m6809US]
+	ldr r1,[m6809ptr,#m6809US]
 	opST16 r1
 	.endm
 ;@---------------------------------------

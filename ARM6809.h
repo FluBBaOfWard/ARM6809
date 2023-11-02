@@ -14,29 +14,29 @@ extern "C" {
 #endif
 
 typedef struct {
-	u32 m6809Opz[256];
-	u32 m6809ReadTbl[8];
-	u32 m6809WriteTbl[8];
-	u32 m6809MemTbl[8];
-// m6809Regs[8]
-	u32 m6809RegF;	// Also DP
-	u32 m6809RegA;
-	u32 m6809RegB;
-	u32 m6809RegX;
-	u32 m6809RegY;
-	u32 m6809RegCY;
-	u32 m6809RegPC;
-	u32 m6809RegSP;
-	u32 m6809US;
-	u8 m6809PendingIrqs;
-	u8 m6809NmiPin;
-	u8 m6809Padding[2];
+	u32 Opz[256];
+	u32 ReadTbl[8];
+	u32 WriteTbl[8];
+	u32 MemTbl[8];
+//	u32 Regs[8]
+	u32 RegF;	// Also DP
+	u32 RegA;
+	u32 RegB;
+	u32 RegX;
+	u32 RegY;
+	u32 RegCY;
+	u32 RegPC;
+	u32 RegSP;
+	u32 US;
+	u8 PendingIrqs;
+	u8 NmiPin;
+	u8 Padding[2];
 
-	void *m6809LastBank;
+	void *LastBank;
 } ARM6809Core;
 
 
-extern ARM6809Core m6809OpTable;
+void m6809Init(ARM6809Core *cpu);
 
 void m6809Reset(ARM6809Core *cpu);
 
@@ -62,11 +62,26 @@ int m6809LoadState(ARM6809Core *cpu, const void *source);
  */
 int m6809GetStateSize(void);
 
+/**
+ * Patch an opcode to a new function.
+ * @param  *cpu: The ARM6809Core cpu to patch.
+ * @param  opcode: Which opcode to redirect.
+ * @param  *function: Pointer to new function .
+ */
+void m6809PatchOpcode(ARM6809Core *cpu, int opcode, void *function);
+
+/**
+ * Restore a previously patched opcode.
+ * @param  *cpu: The ARM6809Core cpu to patch.
+ * @param  opcode: Which opcode to restore.
+ */
+void m6809RestoreOpcode(ARM6809Core *cpu, int opcode);
+
+void m6809RestoreAndRunXCycles(int cycles);
+void m6809RunXCycles(int cycles);
 void m6809SetNMIPin(bool state);
 void m6809SetFIRQPin(bool state);
 void m6809SetIRQPin(bool state);
-void m6809RestoreAndRunXCycles(int cycles);
-void m6809RunXCycles(int cycles);
 void m6809CheckIrqs(void);
 
 #ifdef __cplusplus

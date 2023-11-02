@@ -15,15 +15,18 @@
 	m6809y		.req r7			;@ Bits 0-15=0
 	cycles		.req r8
 	m6809pc		.req r9
-	m6809optbl	.req r10
+	m6809ptr	.req r10
 	m6809sp		.req r11		;@ Bits 0-15=0
 	addy		.req r12		;@ Keep this at r12 (scratch for APCS)
 
+;@----------------------------------------------------------------------------
+
 	.struct 0					;@ Changes section so make sure it's set before real code.
 m6809Opz:			.space 256*4
-m6809ReadTbl:		.space 8*4
-m6809WriteTbl:		.space 8*4
-m6809MemTbl:		.space 8*4
+m6809ReadTbl:		.space 8*4	;@ $0000-FFFF
+m6809WriteTbl:		.space 8*4	;@ $0000-FFFF
+m6809MemTbl:		.space 8*4	;@ $0000-FFFF
+m6809StateStart:
 m6809Regs:
 m6809RegF:
 m6809RegDP:			.long 0
@@ -35,11 +38,15 @@ m6809RegCY:			.long 0
 m6809RegPC:			.long 0
 m6809RegSP:			.long 0
 m6809US:			.long 0
-m6809PendingIrqs:	.byte 0
+m6809PendingIrqs:	.byte 0		;@ (interrupt flags)
 m6809NmiPin:		.byte 0
 m6809Padding:		.space 2
+m6809StateEnd:
 
-m6809LastBank:		.long 0
+m6809LastBank:		.long 0		;@ Last memmap added to PC (used to calculate current PC)
+m6809End:
 m6809Size:
+
+m6809StateSize = m6809StateEnd-m6809StateStart
 
 ;@----------------------------------------------------------------------------

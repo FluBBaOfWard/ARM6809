@@ -10,6 +10,19 @@
 
 #include "ARM6809mac.h"
 
+	.global m6809Init
+	.global m6809Reset
+	.global m6809SetNMIPin
+	.global m6809SetFIRQPin
+	.global m6809SetIRQPin
+	.global m6809RestoreAndRunXCycles
+	.global m6809RunXCycles
+	.global m6809CheckIrqs
+	.global m6809SaveState
+	.global m6809LoadState
+	.global m6809GetStateSize
+	.global m6809OutOfCycles
+
 	.syntax unified
 	.arm
 
@@ -26,22 +39,6 @@
 #endif
 	.align 2
 
-
-	.global m6809Reset
-	.global m6809SetNMIPin
-	.global m6809SetFIRQPin
-	.global m6809SetIRQPin
-	.global m6809RestoreAndRunXCycles
-	.global m6809RunXCycles
-	.global m6809CheckIrqs
-	.global m6809SaveState
-	.global m6809LoadState
-	.global m6809GetStateSize
-	.global m6809OutOfCycles
-
-	.global m6809OpTable
-
-
 #ifdef KONAMI6809
 decodeOpCode:
 	loadLastBank r1
@@ -55,7 +52,7 @@ decodeOpCode:
 	tst r1,#0x08
 	eorne r0,r0,#0x0A
 
-	ldr pc,[m6809optbl,r0,lsl#2]
+	ldr pc,[m6809ptr,r0,lsl#2]
 #endif
 
 ;@----------------------------------------------------------------------------
@@ -284,7 +281,7 @@ fetchY:							;@ #2 = Y
 	mov addy,m6809y
 	bx lr
 fetchU:							;@ #3 = U
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	bx lr
 fetchS:							;@ #4 = S
 	mov addy,m6809sp
@@ -331,8 +328,8 @@ exgY:							;@ #2 = Y
 	mov m6809y,addy
 	bx lr
 exgU:							;@ #3 = U
-	ldr r1,[m6809optbl,#m6809US]
-	str addy,[m6809optbl,#m6809US]
+	ldr r1,[m6809ptr,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	bx lr
 exgS:							;@ #4 = S
 	mov r1,m6809sp
@@ -374,7 +371,7 @@ storeY:							;@ #2 = Y
 	mov m6809y,addy
 	bx lr
 storeU:							;@ #3 = U
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	bx lr
 storeS:							;@ #4 = S
 	mov m6809sp,addy
@@ -594,7 +591,7 @@ _32:	;@ LEAS
 _33:	;@ LEAU
 ;@----------------------------------------------------------------------------
 	bl fetchIdxAdr
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	fetch 4
 ;@----------------------------------------------------------------------------
 _34:	;@ PSHS #xx
@@ -2061,7 +2058,7 @@ pushRegisters:
 	bl pushSP16
 	tst m6809f,#EF
 	beq dontPushAllRegs
-	ldr r0,[m6809optbl,#m6809US]
+	ldr r0,[m6809ptr,#m6809US]
 	mov r0,r0,lsr#16
 	bl pushSP16
 	mov r0,m6809y,lsr#16
@@ -2109,7 +2106,7 @@ pullRegisters:				;@ Only used by RTI right now
 	mov m6809y,r0,lsl#16
 	bl pullSP16
 	mov r0,r0,lsl#16
-	str r0,[m6809optbl,#m6809US]
+	str r0,[m6809ptr,#m6809US]
 	eatCycles 9
 dontPullAllRegs:
 	bl pullSP16
@@ -2124,12 +2121,12 @@ pushRegistersSPR0:			;@ r0=registers
 	stmfd sp!,{r0,lr}
 
 	tst r0,#0x80
-	ldrne r0,[m6809optbl,#m6809LastBank]
+	ldrne r0,[m6809ptr,#m6809LastBank]
 	subne r0,m6809pc,r0
 	blne pushSP16
 	ldmfd sp,{r0}
 	tst r0,#0x40
-	ldrne r0,[m6809optbl,#m6809US]
+	ldrne r0,[m6809ptr,#m6809US]
 	movne r0,r0,lsr#16
 	blne pushSP16
 	ldmfd sp,{r0}
@@ -2164,7 +2161,7 @@ pushRegistersUSR0:			;@ r0=registers
 	stmfd sp!,{r0,lr}
 
 	tst r0,#0x80
-	ldrne r0,[m6809optbl,#m6809LastBank]
+	ldrne r0,[m6809ptr,#m6809LastBank]
 	subne r0,m6809pc,r0
 	blne pushUS16
 	ldmfd sp,{r0}
@@ -2249,7 +2246,7 @@ noPull2:
 	beq noPull1
 	bl pullSP16
 	mov r0,r0,lsl#16
-	str r0,[m6809optbl,#m6809US]
+	str r0,[m6809ptr,#m6809US]
 noPull1:
 	ldmfd sp!,{r0}
 	tst r0,#0x80
@@ -2347,9 +2344,9 @@ pushUS8_F:
 ;@----------------------------------------------------------------------------
 pushUS8:
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	sub addy,addy,#0x00010000
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	mov addy,addy,lsr#16
 	writeMem8NoLr
 ;@----------------------------------------------------------------------------
@@ -2361,10 +2358,10 @@ pullSP8:
 ;@----------------------------------------------------------------------------
 pullUS8:
 ;@----------------------------------------------------------------------------
-	ldr r1,[m6809optbl,#m6809US]
+	ldr r1,[m6809ptr,#m6809US]
 	mov addy,r1,lsr#16
 	add r1,r1,#0x00010000
-	str r1,[m6809optbl,#m6809US]
+	str r1,[m6809ptr,#m6809US]
 	readMem8NoLr
 ;@----------------------------------------------------------------------------
 pushSP16:
@@ -2375,9 +2372,9 @@ pushSP16:
 ;@----------------------------------------------------------------------------
 pushUS16:
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	sub addy,addy,#0x00020000
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	mov addy,addy,lsr#16
 	writeMem16NoLr
 ;@----------------------------------------------------------------------------
@@ -2390,10 +2387,10 @@ pullSP16:
 ;@----------------------------------------------------------------------------
 pullUS16:
 ;@----------------------------------------------------------------------------
-	ldr r1,[m6809optbl,#m6809US]
+	ldr r1,[m6809ptr,#m6809US]
 	mov addy,r1,lsr#16
 	add r1,r1,#0x00020000
-	str r1,[m6809optbl,#m6809US]
+	str r1,[m6809ptr,#m6809US]
 	readMem16NoLr
 	bx lr
 
@@ -2448,7 +2445,7 @@ FEA20:		;@ EA = Y+ofs
 FEA40:		;@ EA = US+ofs
 ;@----------------------------------------------------------------------------
 	mov r0,r0,lsl#27
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,r0,asr#11
 	eatCycles 1
 	bx lr
@@ -2802,51 +2799,51 @@ FEABB:		;@ EA = [Y+D]
 ;@----------------------------------------------------------------------------
 FEAC0:		;@ EA = US++
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add r0,addy,#0x00010000
-	str r0,[m6809optbl,#m6809US]
+	str r0,[m6809ptr,#m6809US]
 	eatCycles 2
 	bx lr
 ;@----------------------------------------------------------------------------
 FEAC1:		;@ EA = US+=2
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add r0,addy,#0x00020000
-	str r0,[m6809optbl,#m6809US]
+	str r0,[m6809ptr,#m6809US]
 	eatCycles 3
 	bx lr
 ;@----------------------------------------------------------------------------
 FEAC2:		;@ EA = --US
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	sub addy,addy,#0x00010000
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	eatCycles 2
 	bx lr
 ;@----------------------------------------------------------------------------
 FEAC3:		;@ EA = (US-=2)
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	sub addy,addy,#0x00020000
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	eatCycles 3
 	bx lr
 ;@----------------------------------------------------------------------------
 FEAC4:		;@ EA = US
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	bx lr
 ;@----------------------------------------------------------------------------
 FEAC5:		;@ EA = US+signed(B)
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,m6809b,asr#8
 	eatCycles 1
 	bx lr
 ;@----------------------------------------------------------------------------
 FEAC6:		;@ EA = US+signed(A)
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,m6809a,asr#8
 	eatCycles 1
 	bx lr
@@ -2854,7 +2851,7 @@ FEAC6:		;@ EA = US+signed(A)
 FEAC8:		;@ EA = US+signed#xx
 ;@----------------------------------------------------------------------------
 	ldrsb r0,[m6809pc],#1
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,r0,lsl#16
 	eatCycles 1
 	bx lr
@@ -2864,14 +2861,14 @@ FEAC9:		;@ EA = US+#xxxx
 	ldrb addy,[m6809pc],#1
 	ldrb r0,[m6809pc],#1
 	orr r0,r0,addy,lsl#8
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,r0,lsl#16
 	eatCycles 4
 	bx lr
 ;@----------------------------------------------------------------------------
 FEACB:		;@ EA = US+D
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,m6809a
 	add addy,addy,m6809b,lsr#8
 	eatCycles 4
@@ -2879,52 +2876,52 @@ FEACB:		;@ EA = US+D
 ;@----------------------------------------------------------------------------
 FEAD0:		;@ EA = [US++]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add r0,addy,#0x00010000
-	str r0,[m6809optbl,#m6809US]
+	str r0,[m6809ptr,#m6809US]
 	eatCycles 5
 	b readIndirectAdr
 ;@----------------------------------------------------------------------------
 FEAD1:		;@ EA = [US+=2]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add r0,addy,#0x00020000
-	str r0,[m6809optbl,#m6809US]
+	str r0,[m6809ptr,#m6809US]
 	eatCycles 6
 	b readIndirectAdr
 ;@----------------------------------------------------------------------------
 FEAD2:		;@ EA = [--US]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	sub addy,addy,#0x00010000
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	eatCycles 5
 	b readIndirectAdr
 ;@----------------------------------------------------------------------------
 FEAD3:		;@ EA = [(US-=2)]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	sub addy,addy,#0x00020000
-	str addy,[m6809optbl,#m6809US]
+	str addy,[m6809ptr,#m6809US]
 	eatCycles 6
 	b readIndirectAdr
 ;@----------------------------------------------------------------------------
 FEAD4:		;@ EA = [US]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	eatCycles 3
 	b readIndirectAdr
 ;@----------------------------------------------------------------------------
 FEAD5:		;@ EA = [US+signed(B)]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,m6809b,asr#8
 	eatCycles 4
 	b readIndirectAdr
 ;@----------------------------------------------------------------------------
 FEAD6:		;@ EA = [US+signed(A)]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,m6809a,asr#8
 	eatCycles 4
 	b readIndirectAdr
@@ -2932,7 +2929,7 @@ FEAD6:		;@ EA = [US+signed(A)]
 FEAD8:		;@ EA = [US+signed#xx]
 ;@----------------------------------------------------------------------------
 	ldrsb r0,[m6809pc],#1
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,r0,lsl#16
 	eatCycles 4
 	b readIndirectAdr
@@ -2942,14 +2939,14 @@ FEAD9:		;@ EA = [US+#xxxx]
 	ldrb addy,[m6809pc],#1
 	ldrb r0,[m6809pc],#1
 	orr r0,r0,addy,lsl#8
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,r0,lsl#16
 	eatCycles 7
 	b readIndirectAdr
 ;@----------------------------------------------------------------------------
 FEADB:		;@ EA = [US+D]
 ;@----------------------------------------------------------------------------
-	ldr addy,[m6809optbl,#m6809US]
+	ldr addy,[m6809ptr,#m6809US]
 	add addy,addy,m6809a
 	add addy,addy,m6809b,lsr#8
 	eatCycles 7
@@ -3095,45 +3092,52 @@ FEAFB:		;@ EA = [SP+D]
 
 
 ;@----------------------------------------------------------------------------
-m6809OutOfCycles:
-returnToCaller:
-	ldmfd sp!,{lr}
-	bx lr
-;@----------------------------------------------------------------------------
 m6809SetNMIPin:
 ;@----------------------------------------------------------------------------
 	cmp r0,#0
 	movne r0,#NF
-	ldr r1,[m6809optbl,#m6809PendingIrqs]
-	strb r0,[m6809optbl,#m6809NmiPin]
+	ldr r1,[m6809ptr,#m6809PendingIrqs]
+	strb r0,[m6809ptr,#m6809NmiPin]
 	bics r0,r0,r1,lsr#8
 	orrne r1,r1,#NF
-	strbne r1,[m6809optbl,#m6809PendingIrqs]
+	strbne r1,[m6809ptr,#m6809PendingIrqs]
 	bx lr
 ;@----------------------------------------------------------------------------
 m6809SetFIRQPin:
 ;@----------------------------------------------------------------------------
 	cmp r0,#0
-	ldrb r0,[m6809optbl,#m6809PendingIrqs]
+	ldrb r0,[m6809ptr,#m6809PendingIrqs]
 	orrne r0,r0,#FF
 	biceq r0,r0,#FF
-	strb r0,[m6809optbl,#m6809PendingIrqs]
+	strb r0,[m6809ptr,#m6809PendingIrqs]
 	bx lr
 ;@----------------------------------------------------------------------------
 m6809SetIRQPin:
 ;@----------------------------------------------------------------------------
 	cmp r0,#0
-	ldrb r0,[m6809optbl,#m6809PendingIrqs]
+	ldrb r0,[m6809ptr,#m6809PendingIrqs]
 	orrne r0,r0,#IF
 	biceq r0,r0,#IF
-	strb r0,[m6809optbl,#m6809PendingIrqs]
+	strb r0,[m6809ptr,#m6809PendingIrqs]
 	bx lr
 
-
+;@----------------------------------------------------------------------------
+m6809DelayIrqCheck:			;@ This can be used on EI/RTI/POPF
+;@----------------------------------------------------------------------------
+	orr cycles,cycles,#0xC0000000
+	fetchForce
+;@----------------------------------------------------------------------------
+m6809OutOfCycles:
+;@	mov cycles,cycles,lsl#2		;@ Check for delayed irq check.
+;@	movs cycles,cycles,asr#2
+;@	bpl m6809CheckIrqs
+returnToCaller:
+	ldmfd sp!,{lr}
+	bx lr
 ;@----------------------------------------------------------------------------
 m6809RestoreAndRunXCycles:	;@ r0 = number of cycles to run
 ;@----------------------------------------------------------------------------
-	add r1,m6809optbl,#m6809Regs
+	add r1,m6809ptr,#m6809Regs
 	ldmia r1,{m6809f-m6809pc,m6809sp}	;@ Restore M6809 state
 ;@----------------------------------------------------------------------------
 m6809RunXCycles:			;@ r0 = number of cycles to run
@@ -3144,7 +3148,7 @@ addR0Cycles:
 ;@----------------------------------------------------------------------------
 m6809CheckIrqs:
 ;@----------------------------------------------------------------------------
-	ldrb r0,[m6809optbl,#m6809PendingIrqs]
+	ldrb r0,[m6809ptr,#m6809PendingIrqs]
 	tst r0,#IF+FF+NF
 	beq m6809Go
 	bic cycles,cycles,#CYC_SYNC
@@ -3187,7 +3191,7 @@ m6809Go:	;@ Continue running
 m6809NMI:
 ;@----------------------------------------------------------
 	bic r0,r0,#NF
-	strb r0,[m6809optbl,#m6809PendingIrqs]
+	strb r0,[m6809ptr,#m6809PendingIrqs]
 	ldr addy,=0xFFFC			;@ Get NMI vector
 nmiEntry:
 swiEntry:
@@ -3211,11 +3215,6 @@ firqEntry:
 	encodePC
 	fetch 7
 ;@----------------------------------------------------------------------------
-m6809DelayIrqCheck:			;@ This can be used on EI/RTI/POPF
-;@----------------------------------------------------------------------------
-	orr cycles,cycles,#0xC0000000
-	fetchForce
-;@----------------------------------------------------------------------------
 
 
 
@@ -3232,11 +3231,6 @@ _xx:	;@ ???				invalid opcode
 	mov r11,r11					;@ No$GBA breakpoint
 	loadLastBank r0
 	sub r0,m6809pc,r0
-;@	[ DEBUG
-;@		adr r0,_xx
-;@		mov r1,#0
-;@		bl debug_
-;@	]
 	fetch 2
 ;@----------------------------------------------------------------------------
 _01:	;@ NEG Direct, undocumented
@@ -3412,7 +3406,7 @@ FEAxx:
 	sub r0,m6809pc,r0
 	mov addy,#0
 	mov r1,#0
-	ldr pc,[m6809optbl,#m6809ReadTbl]
+	ldr pc,[m6809ptr,#m6809ReadTbl]
 ;@----------------------------------------------------------------------------
 _10NP:		;@ Page1 Extensions
 _11NP:		;@ Page2 Extensions
@@ -3425,20 +3419,28 @@ _11NP:		;@ Page2 Extensions
 	.section .text
 	.align 2
 ;@----------------------------------------------------------------------------
-m6809Reset:					;@ r0 = m6809optbl.
+m6809Init:				;@ In r0=m6809ptr
+	.type m6809Init STT_FUNC
+;@----------------------------------------------------------------------------
+	add r0,r0,#m6809Opz
+	adr r1,m6809OpTable
+	mov r2,#256*4
+	b memcpy
+;@----------------------------------------------------------------------------
+m6809Reset:					;@ r0 = m6809ptr.
 ;@ Called by cpuReset
 ;@----------------------------------------------------------------------------
 	stmfd sp!,{r4-r11,lr}
-	mov m6809optbl,r0
+	mov m6809ptr,r0
 
 	mov m6809a,#0x00000000
 	mov m6809b,#0x00000000
 	mov m6809x,#0x00000000
 	mov m6809y,#0x00000000
 	mov m6809f,#PSR_I+PSR_F
-	strb m6809a,[m6809optbl,#m6809PendingIrqs]
+	strb m6809a,[m6809ptr,#m6809PendingIrqs]
 	ldr m6809sp,=0xffff0000		;@ SP=FFFF
-	str m6809sp,[m6809optbl,#m6809US]
+	str m6809sp,[m6809ptr,#m6809US]
 	mov cycles,#0
 
 	;@ (clear irq/nmi/res source)...
@@ -3448,61 +3450,67 @@ m6809Reset:					;@ r0 = m6809optbl.
 	mov m6809pc,r0
 	encodePC					;@ Get RESET vector
 
-	add r0,m6809optbl,#m6809Regs
+	add r0,m6809ptr,#m6809Regs
 	stmia r0!,{m6809f-m6809pc,m6809sp}
 
 	ldmfd sp!,{r4-r11,lr}
 	bx lr
 ;@----------------------------------------------------------------------------
-m6809SaveState:			;@ In r0=destination, r1=m6809optbl. Out r0=state size.
+m6809SaveState:			;@ In r0=destination, r1=m6809ptr. Out r0=state size.
 	.type   m6809SaveState STT_FUNC
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{r4,m6809optbl,lr}
+	stmfd sp!,{r4,m6809ptr,lr}
 
 	sub r4,r0,#m6809Regs
-	mov m6809optbl,r1
+	mov m6809ptr,r1
 
-	add r1,m6809optbl,#m6809Regs
-	mov r2,#m6809StateEnd-m6809StateStart	;@ Right now 0x28
+	add r1,m6809ptr,#m6809Regs
+	mov r2,#m6809StateSize				;@ Right now 0x28
 	bl memcpy
 
 	;@ Convert copied PC to not offseted.
-	ldr r0,[r4,#m6809RegPC]					;@ Offsetted m6809pc
+	ldr r0,[r4,#m6809RegPC]				;@ Offsetted m6809pc
 	loadLastBank r2
 	sub r0,r0,r2
-	str r0,[r4,#m6809RegPC]					;@ Normal m6809pc
+	str r0,[r4,#m6809RegPC]				;@ Normal m6809pc
 
-	ldmfd sp!,{r4,m6809optbl,lr}
-	mov r0,#m6809StateEnd-m6809StateStart	;@ Right now 0x28
+	ldmfd sp!,{r4,m6809ptr,lr}
+	mov r0,#m6809StateSize				;@ Right now 0x28
 	bx lr
 ;@----------------------------------------------------------------------------
-m6809LoadState:			;@ In r0=m6809optbl, r1=source. Out r0=state size.
+m6809LoadState:			;@ In r0=m6809ptr, r1=source. Out r0=state size.
 	.type   m6809LoadState STT_FUNC
 ;@----------------------------------------------------------------------------
-	stmfd sp!,{m6809pc,m6809optbl,lr}
+	stmfd sp!,{m6809pc,m6809ptr,lr}
 
-	mov m6809optbl,r0
-	add r0,m6809optbl,#m6809Regs
-	mov r2,#m6809StateEnd-m6809StateStart	;@ Right now 0x28
+	mov m6809ptr,r0
+	add r0,m6809ptr,#m6809Regs
+	mov r2,#m6809StateSize				;@ Right now 0x28
 	bl memcpy
 
-	ldr m6809pc,[m6809optbl,#m6809RegPC]		;@ Normal m6809pc
+	ldr m6809pc,[m6809ptr,#m6809RegPC]	;@ Normal m6809pc
 	encodePC
-	str m6809pc,[m6809optbl,#m6809RegPC]		;@ Rewrite offseted m6809pc
+	str m6809pc,[m6809ptr,#m6809RegPC]	;@ Rewrite offseted m6809pc
 
-	ldmfd sp!,{m6809pc,m6809optbl,lr}
+	ldmfd sp!,{m6809pc,m6809ptr,lr}
 ;@----------------------------------------------------------------------------
 m6809GetStateSize:		;@ Out r0=state size.
 	.type   m6809GetStateSize STT_FUNC
 ;@----------------------------------------------------------------------------
-	mov r0,#m6809StateEnd-m6809StateStart	;@ Right now 0x28
+	mov r0,#m6809StateSize				;@ Right now 0x28
 	bx lr
 ;@----------------------------------------------------------------------------
-#ifdef NDS
-	.section .dtcm, "ax", %progbits				;@ For the NDS ARM9
-#elif GBA
-	.section .iwram, "ax", %progbits			;@ For the GBA
-#endif
+m6809RestoreOpcode:		;@ In r0=m6809ptr, r1=opcode
+	.type   m6809RestoreOpcode STT_FUNC
+;@----------------------------------------------------------------------------
+	adr r3,m6809OpTable
+	ldr r2,[r3,r1,lsl#2]
+;@----------------------------------------------------------------------------
+m6809PatchOpcode:		;@ In r0=m6809ptr, r1=opcode, r2=function ptr.
+	.type   m6809PatchOpcode STT_FUNC
+;@----------------------------------------------------------------------------
+	str r2,[r0,r1,lsl#2]
+	bx lr
 ;@----------------------------------------------------------------------------
 m6809OpTable:
 	.long _00,_01,_02,_03,_04,_05,_06,_07,_08,_09,_0A,_0B,_0C,_0D,_0E,_0F
@@ -3521,23 +3529,6 @@ m6809OpTable:
 	.long _D0,_D1,_D2,_D3,_D4,_D5,_D6,_D7,_D8,_D9,_DA,_DB,_DC,_DD,_DE,_DF
 	.long _E0,_E1,_E2,_E3,_E4,_E5,_E6,_E7,_E8,_E9,_EA,_EB,_EC,_ED,_EE,_EF
 	.long _F0,_F1,_F2,_F3,_F4,_F5,_F6,_F7,_F8,_F9,_FA,_FB,_FC,_FD,_FE,_FF
-
-	;@ m6809ReadTbl
-	.space 8*4		;@ $0000-FFFF
-	;@ m6809WriteTbl
-	.space 8*4		;@ $0000-FFFF
-	;@ m6809MemTbl
-	.space 8*4		;@ $0000-FFFF
-
-m6809StateStart:
-	;@ group these together for save/loadstate
-	.space 8*4 ;@ m6809Regs			(flg,a,b,x,y,cycles,pc,sp)
-	.long 0 ;@ m6809US:
-	.byte 0 ;@ m6809PendingIrqs:	(interrupt flags)
-	.byte 0 ;@ m6809NmiPin:
-	.space 2 ;@ m6809Padding:
-m6809StateEnd:
-	.long 0 ;@ m6809LastBank:		Last memmap added to PC (used to calculate current PC)
 ;@----------------------------------------------------------------------------
-
+	.end
 #endif // #ifdef __arm__

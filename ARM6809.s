@@ -21,6 +21,8 @@
 	.global m6809SaveState
 	.global m6809LoadState
 	.global m6809GetStateSize
+	.global m6809PatchOpcode
+	.global m6809RestoreOpcode
 	.global m6809OutOfCycles
 
 	.syntax unified

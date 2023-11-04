@@ -1,7 +1,7 @@
 ARM6809 revision history
 -=-=-=-=-=-=-=-=-=-=-=-=-
 
-V1.1.7 - 2023-11-02 (FluBBa)
+V1.1.7 - 2023-11-04 (FluBBa)
 	Added init function.
 	Added patching function.
 	Removed OldCycles & NextTimeout variables.

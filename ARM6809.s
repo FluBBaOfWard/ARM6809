@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2023 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2024 Fredrik Ahlström. All rights reserved.
 //
 
 #ifdef __arm__
@@ -15,6 +15,9 @@
 	.global m6809SetNMIPin
 	.global m6809SetFIRQPin
 	.global m6809SetIRQPin
+	.global m6809SetNMIPinCurrentCpu
+	.global m6809SetFIRQPinCurrentCpu
+	.global m6809SetIRQPinCurrentCpu
 	.global m6809RestoreAndRunXCycles
 	.global m6809RunXCycles
 	.global m6809CheckIrqs
@@ -23,6 +26,7 @@
 	.global m6809GetStateSize
 	.global m6809PatchOpcode
 	.global m6809RestoreOpcode
+	.global m6809SetEncryptedMode
 	.global m6809OutOfCycles
 
 	.syntax unified
@@ -1966,6 +1970,7 @@ _10:	;@ Page1 Extensions
 	eor r0,r0,#0x22
 	tst r1,#0x02
 	eorne r0,r0,#0xA0
+_10Enc:
 	tst r1,#0x08
 	eorne r0,r0,#0x0A
 #endif
@@ -2002,6 +2007,7 @@ _11:	;@ Page2 Extensions
 	eor r0,r0,#0x22
 	tst r1,#0x02
 	eorne r0,r0,#0xA0
+_11Enc:
 	tst r1,#0x08
 	eorne r0,r0,#0x0A
 #endif
@@ -2025,7 +2031,6 @@ _11Table:
 	.long _11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP
 	.long _11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP
 	.long _11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP,_11NP
-
 
 
 ;@----------------------------------------------------------------------------
@@ -3094,33 +3099,48 @@ FEAFB:		;@ EA = [SP+D]
 
 
 ;@----------------------------------------------------------------------------
-m6809SetNMIPin:
+m6809SetNMIPinCurrentCpu:	;@ r0=pin state
+;@----------------------------------------------------------------------------
+	mov r1,m6809ptr
+;@----------------------------------------------------------------------------
+m6809SetNMIPin:				;@ r0=pin state, r1=cpu
+	.type   m6809SetNMIPin STT_FUNC
 ;@----------------------------------------------------------------------------
 	cmp r0,#0
 	movne r0,#NF
-	ldr r1,[m6809ptr,#m6809PendingIrqs]
-	strb r0,[m6809ptr,#m6809NmiPin]
-	bics r0,r0,r1,lsr#8
-	orrne r1,r1,#NF
-	strbne r1,[m6809ptr,#m6809PendingIrqs]
+	ldr r2,[r1,#m6809PendingIrqs]
+	strb r0,[r1,#m6809NmiPin]
+	bics r0,r0,r2,lsr#8
+	orrne r2,r2,#NF
+	strbne r2,[r1,#m6809PendingIrqs]
 	bx lr
 ;@----------------------------------------------------------------------------
-m6809SetFIRQPin:
+m6809SetFIRQPinCurrentCpu:	;@ r0=pin state
+;@----------------------------------------------------------------------------
+	mov r1,m6809ptr
+;@----------------------------------------------------------------------------
+m6809SetFIRQPin:			;@ r0=pin state, r1=cpu
+	.type   m6809SetFIRQPin STT_FUNC
 ;@----------------------------------------------------------------------------
 	cmp r0,#0
-	ldrb r0,[m6809ptr,#m6809PendingIrqs]
+	ldrb r0,[r1,#m6809PendingIrqs]
 	orrne r0,r0,#FF
 	biceq r0,r0,#FF
-	strb r0,[m6809ptr,#m6809PendingIrqs]
+	strb r0,[r1,#m6809PendingIrqs]
 	bx lr
 ;@----------------------------------------------------------------------------
-m6809SetIRQPin:
+m6809SetIRQPinCurrentCpu:	;@ r0=pin state
+;@----------------------------------------------------------------------------
+	mov r1,m6809ptr
+;@----------------------------------------------------------------------------
+m6809SetIRQPin:				;@ r0=pin state, r1=cpu
+	.type   m6809SetIRQPin STT_FUNC
 ;@----------------------------------------------------------------------------
 	cmp r0,#0
-	ldrb r0,[m6809ptr,#m6809PendingIrqs]
+	ldrb r0,[r1,#m6809PendingIrqs]
 	orrne r0,r0,#IF
 	biceq r0,r0,#IF
-	strb r0,[m6809ptr,#m6809PendingIrqs]
+	strb r0,[r1,#m6809PendingIrqs]
 	bx lr
 
 ;@----------------------------------------------------------------------------
@@ -3513,6 +3533,52 @@ m6809PatchOpcode:		;@ In r0=m6809ptr, r1=opcode, r2=function ptr.
 ;@----------------------------------------------------------------------------
 	str r2,[r0,r1,lsl#2]
 	bx lr
+
+#ifdef KONAMI6809
+;@----------------------------------------------------------------------------
+m6809SetEncryptedMode:	;@ In r0=m6809ptr, r1=encrypted true/false
+	.type   m6809SetEncryptedMode STT_FUNC
+;@----------------------------------------------------------------------------
+	cmp r1,#0
+	adreq r2,nomFetch
+	adrne r2,encFetch
+	ldr r3,=decodeOpCode
+
+	ldr r12,[r2],#4
+	str r12,[r3],#4
+	ldr r12,[r2],#4
+	str r12,[r3],#4
+
+	ldr r3,=_10Enc
+	ldr r12,[r2],#4
+	str r12,[r3],#4
+	ldr r12,[r2],#4
+	str r12,[r3],#4
+	ldrne r3,=_10
+	str r3,[r0,#0x10*4]
+
+	sub r2,r2,#8
+	ldr r3,=_11Enc
+	ldr r12,[r2],#4
+	str r12,[r3],#4
+	ldr r12,[r2],#4
+	str r12,[r3],#4
+	ldrne r3,=_11
+	str r3,[r0,#0x11*4]
+	bx lr
+
+nomFetch:
+	ldrb r0,[m6809pc],#1
+	ldr pc,[m6809ptr,r0,lsl#2]
+	eatCycles 1
+	ldrb r0,[m6809pc],#1
+encFetch:
+	loadLastBank r1
+	sub r1,m6809pc,r1
+	tst r1,#0x08
+	eorne r0,r0,#0x0A
+#endif
+
 ;@----------------------------------------------------------------------------
 m6809OpTable:
 	.long _00,_01,_02,_03,_04,_05,_06,_07,_08,_09,_0A,_0B,_0C,_0D,_0E,_0F

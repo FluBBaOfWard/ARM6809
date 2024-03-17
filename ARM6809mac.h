@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2023 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2024 Fredrik Ahlström. All rights reserved.
 //
 
 #include "ARM6809.i"

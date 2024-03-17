@@ -3,7 +3,7 @@
 //  ARM6809
 //
 //  Created by Fredrik Ahlström on 2008-07-14.
-//  Copyright © 2008-2023 Fredrik Ahlström. All rights reserved.
+//  Copyright © 2008-2024 Fredrik Ahlström. All rights reserved.
 //
 
 #ifndef ARM6809_HEADER
@@ -77,11 +77,18 @@ void m6809PatchOpcode(ARM6809Core *cpu, int opcode, void *function);
  */
 void m6809RestoreOpcode(ARM6809Core *cpu, int opcode);
 
+/**
+ * Change encrypted mode on the cpu when KONAMI6809 is defined.
+ * @param  *cpu: The ARM6809Core cpu to change mode on.
+ * @param  encrypted: enable/disable encrypted mode.
+ */
+void m6809SetEncryptedMode(ARM6809Core *cpu, bool encrypted);
+
 void m6809RestoreAndRunXCycles(int cycles);
 void m6809RunXCycles(int cycles);
-void m6809SetNMIPin(bool state);
-void m6809SetFIRQPin(bool state);
-void m6809SetIRQPin(bool state);
+void m6809SetNMIPin(bool state, ARM6809Core *cpu);
+void m6809SetFIRQPin(bool state, ARM6809Core *cpu);
+void m6809SetIRQPin(bool state, ARM6809Core *cpu);
 void m6809CheckIrqs(void);
 
 #ifdef __cplusplus

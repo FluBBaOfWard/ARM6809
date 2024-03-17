@@ -3550,19 +3550,18 @@ m6809SetEncryptedMode:	;@ In r0=m6809ptr, r1=encrypted true/false
 	str r12,[r3],#4
 
 	ldr r3,=_10Enc
-	ldr r12,[r2],#4
-	str r12,[r3],#4
-	ldr r12,[r2],#4
-	str r12,[r3],#4
+	ldr r12,[r2]
+	str r12,[r3]
+	ldr r12,[r2,#4]
+	str r12,[r3,#4]
 	ldrne r3,=_10
 	str r3,[r0,#0x10*4]
 
-	sub r2,r2,#8
 	ldr r3,=_11Enc
-	ldr r12,[r2],#4
-	str r12,[r3],#4
-	ldr r12,[r2],#4
-	str r12,[r3],#4
+	ldr r12,[r2]
+	str r12,[r3]
+	ldr r12,[r2,#4]
+	str r12,[r3,#4]
 	ldrne r3,=_11
 	str r3,[r0,#0x11*4]
 	bx lr

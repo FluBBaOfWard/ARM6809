@@ -1,8 +1,9 @@
 ARM6809 revision history
 -=-=-=-=-=-=-=-=-=-=-=-=-
 
-V1.1.8 - 2024-03-17 (FluBBa)
+V1.1.8 - 2024-04-17 (FluBBa)
 	Added runtime switch between encrypted & un-encrypted.
+	Fixed reset without memory mapped.
 	Made set IRQ/FIRQ/NMI-pin useable from C.
 
 V1.1.7 - 2023-11-04 (FluBBa)

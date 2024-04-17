@@ -3444,6 +3444,8 @@ _11NP:		;@ Page2 Extensions
 m6809Init:				;@ In r0=m6809ptr
 	.type m6809Init STT_FUNC
 ;@----------------------------------------------------------------------------
+	adr r1,voidR				;@ Make sure we can run reset (readmem).
+	str r1,[r0,#m6809ReadTbl+7*4]
 	add r0,r0,#m6809Opz
 	adr r1,m6809OpTable
 	mov r2,#256*4
@@ -3476,6 +3478,7 @@ m6809Reset:					;@ r0 = m6809ptr.
 	stmia r0!,{m6809f-m6809pc,m6809sp}
 
 	ldmfd sp!,{r4-r11,lr}
+voidR:
 	bx lr
 ;@----------------------------------------------------------------------------
 m6809SaveState:			;@ In r0=destination, r1=m6809ptr. Out r0=state size.
